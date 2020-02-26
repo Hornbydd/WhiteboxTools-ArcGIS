@@ -56,6 +56,121 @@ for more details.
 * Release Notes: *
 ******************
 
+Version 1.1.1 (XX-XX-20XX)
+- Added the RasterToVectorPolygons tool, which now completes the raster-vector conversion tool set.
+- Added the MultiscaleElevationPercentile tool.
+- Added the AttributeCorrelationNeighbourhoodAnalysis tool.
+- Added the RadialBasisFunctionInterpolation tool, which includes a thin-plate spline mode.
+- Added the RasterPerimeter tool to measure the perimeter of raster polygons.
+- Added the MDInfFlowAccumulation tool to perform the MD-infinity flow accumulation of Seibert 
+  and McGlynn (2007).
+- Added the InsertDams tool, which can be used to insert impoundment features at a set of points
+  of interest into a DEM. This tool can be used in combination with the ImpoundmentSizeIndex tool 
+  to create artificial reservoirs/depressions.
+- Modified the LidarRbfInterpolation tool to improve efficiency.
+- Fixed an issue with how floating point attributes were written in Shapefile attribute tables.
+- Updated the LidarSegmentation tool, which now used RANSAC to fit planar models to points.
+- Added the HeightAboveGround tool, to normalize a LiDAR point cloud. Each point's z-value is
+  converted to the height above the nearest ground-classified point.
+- Fixed an issue with the Reclass and ReclassFromFile tool that caused striping.
+- The Relcass and ReclassFromFile tools now take 'min' and 'max' in the reclass string.
+- The watershed tool now accepts either a set of vector points or a raster for the pour points 
+  file. If a raster is specified, all non-zero, non-NoData valued cells will be considered 
+  outlet cells and the watershed labels will be assigned based on these values.
+- The D8 and D-infinity flow accumulation tools now take either an input DEM or a flow pointer raster 
+  as inputs.
+
+Version 1.1.0 (09-12-2019)
+- Added the BreachDepressionsLeastCost tool, which performs a modified form of the Lindsay 
+  and Dhun (2015) impact minimizing breaching algorithm. This modified algorithm is very 
+  efficient and can provide an excellent method for creating depressionless DEMs from large 
+  DEMs, including those derived from LiDAR. It is particularly well suited to breaching 
+  through road embankments, approximately the pathway of culverts.
+- The FillDepressions tool algorithm has been completely re-developed. The new algorithm is
+  significantly faster than the previous method, which was based on the Wang and Lui method.
+  For legacy reasons, the previous tool has been retained and renamed FillDepressonsWangAndLui.
+  Notice that this new method also incorporates significantly improved flat area correction
+  that maintains general flowpaths of filled areas.
+- The Sink and DepthInSink tools have been updated to use the new depression filling algorithm.
+- Added the ClassifyBuildingsInLidar tool to reclassify LiDAR points within a LAS file
+  to the building class value (6) that are located within one or more building footprint
+  contained in an input polygon vector file. 
+- Added the NaturalNeighbourInterpolation tool for performing Sibson's (1981) interpolation
+  method on input point data.
+- Added the UpslopeDepressionStorage tool to estimate the average upslope depression 
+  storage capacity (DSC).
+- Added the LidarRbfInterpolation tool for performing a radial basis function (RBF) interpolation
+  of LiDAR data sets.
+- The WhiteboxTools Runner user interface has been significantly improved (many thanks to 
+  Rachel Broders for these contributions).
+- Fixed a bug in which the photometric interpretation was not being set by certain raster
+  decoders, including the SAGA encoder. This was causing an error when outputting GeoTIFF 
+  files.
+- Updated the ConstructVectorTIN and TINGridding tools to include a maximum triangle edge 
+  length to help avoid the creation of spurious long and narrow triangles in convex regions 
+  along the data boundaries.
+- Added the ImageCorrelationNeighbourhoodAnalysis tool for performing correlation analysis
+  between two input rasters within roving search windows. The tool can be used to perform
+  Pearson's r, Spearman's Rho, or Kendall's Tau-b correlations.
+
+Version 1.0.2 (01-11-2019)
+- Added the BurnStreamsAtRoads tool.
+- Added a two-sample K-S test (TwoSampleKsTest) for comparing the distributions of two rasters.
+- Added a Wilcoxon Signed-Rank test (WilcoxonSignedRankTest) for comparing two rasters.
+- Added a paired-samples Student's t-test (PairedSampleTTest) for comparing two rasters.
+- Added the inverse hyperbolic trig functions, i.e. the Arcosh, Arsinh, and Artanh tools.
+- Renamed the LeeFilter to the LeeSigmaFilter.
+- Renamed the RelativeStreamPowerIndex tool to StreamPowerIndex, to be more in-line with
+  other software.
+- Fixed another bug related to the handling of Boolean tool parameters.
+
+Version 1.0.1 (20-10-2019)
+- Boolean type tool parameters previously worked simply by the presence of the parameter flag.
+  This was causing problems with some WBT front-ends, particularly QGIS, where the parameters
+  were being provided to WBT as --flag=False. In this case, because the flag was present, it 
+  was assumed to be True. All tools that have boolean parameters have been updated to handle
+  the case of --flag=False. This is a widespread modification that should fix the unexpected
+  behaviour of many tools in certain front-ends.
+- Fixed a minor bug with the VectorPolygonToRaster tool.
+- Fixed a bug in the DownstreamDistanceToStream tool.
+
+Version 1.0.0 (29-09-2019)
+- Added support for reading and writing the BigTIFF format. This has resulted in numerous changes
+  throughout the codebase as a result of significant modification of ByteOrderReader and addition
+  of ByteOrderWriter. This change has touched almost every one of the raster format 
+  encoders/decoders.
+- Performance improvements have been made to the FlattenLakes (hydro-flattening) tool.
+- Fixed a bug preventing the SplitColourComposite tool from reading the '--input' flag correctly.
+- The ClipLidarToPolygon now issues a warning if the output LAS file does not contain any points
+  within the clipped region and does not output a file. Also, the LAS reader no longer panics 
+  when it encounters a file with no points. Now it reads the header file, issues a warning, and 
+  carries on, allowing the tools to handle the case of no points.
+- ImageRegression can now optionally output a scatterplot. The scatterplot is based on a random 
+  sample of a user-defined size.
+- Added the CleanVector tool.
+- ExtractRasterStatistics has been renamed ZonalStatistics to be more inline with other GIS, 
+  including ArcGIS and QGIS.
+- Added the median as a statistic that ZonalStatistics provides.
+- Fixed a bug in the VectorPolygonsToRaster tool that sometimes mishandled polygon holes.
+- Added the FilterLidarClasses tool to filter out points of user-specified classes.
+- Added the LidarRansacPlanes tool to identify points belonging to planar surfaces. This tool
+  uses the RANSAC method, which is a robust modelling method that handles the presence of 
+  numerous outlier points.
+- The ClipLidarToPolygon tool has been parallelized.
+- The LasToAscii and AsciiToLas tools have been updated to handle RGB colour data for points.
+- Added the CsvPointsToVector tool to convert a CSV text table into a shapefile of vector points. 
+  The table must contain x and y coordinate fields.
+- The FeaturePreservingDenoise was renamed to FeaturePreservingSmoothing. The DrainagePreservingSmoothing
+  tool was removed. Use FeaturePreservingSmoothing instead.
+- Added the ability to output the average number of point returns per pulse in the LidarPointStats tool.
+- LidarTinGridding, LidarIdwIntarpolation, and LidarNearestNeighbourGridding now can interpolate the 
+  return number, number of returns, and RGB colour data associated with points in a LAS file.
+- Added the ModifyNoDataValue tool to change the NoData value in a raster. It updates the value in 
+  the raster header and then modifies each grid cell in the raster containing the old NoData value
+  to the new value. This operation overwrites the existing raster.
+- Fixed an issue with GeoTIFF NoData values that impacted many tools. NoData values were not interpreted
+  correctly when they were very large positive or negative values (near the min/max of an f32).
+
 Version 0.16.0 (24-05-2019)
 - Added the MergeLineSegments and SphericalStdDevOfNormals tools.
 - Fixed a bug with reading LAS files with point records with extra bytes. Previously, the LAS decoder

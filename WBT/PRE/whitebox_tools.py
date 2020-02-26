@@ -6,7 +6,7 @@ See whitebox_example.py for an example of how to use it.
 # This script is part of the WhiteboxTools geospatial library.
 # Authors: Dr. John Lindsay
 # Created: 28/11/2017
-# Last Modified: 22/04/2018
+# Last Modified: 09/12/2019
 # License: MIT
 
 from __future__ import print_function
@@ -15,7 +15,6 @@ from os import path
 import sys
 import platform
 import re
-import subprocess
 # import shutil
 from subprocess import CalledProcessError, Popen, PIPE, STDOUT
 
@@ -125,9 +124,8 @@ class WhiteboxTools(object):
                     cl += v + " "
                 callback(cl.strip() + "\n")
 
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            proc = Popen(args2, shell=False, stdout=PIPE, stderr=STDOUT, bufsize=1, universal_newlines=True, startupinfo=startupinfo)
+            proc = Popen(args2, shell=False, stdout=PIPE,
+                         stderr=STDOUT, bufsize=1, universal_newlines=True)
 
             while True:
                 line = proc.stdout.readline()
@@ -376,6 +374,17 @@ class WhiteboxTools(object):
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     ##############
     # Data Tools #
     ##############
@@ -391,6 +400,20 @@ class WhiteboxTools(object):
         args = []
         args.append("--input='{}'".format(i))
         return self.run_tool('add_point_coordinates_to_table', args, callback) # returns 1 if error
+
+    def clean_vector(self, i, output, callback=None):
+        """Removes null features and lines/polygons with fewer than the required number of vertices.
+
+        Keyword arguments:
+
+        i -- Input vector file. 
+        output -- Output vector file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        return self.run_tool('clean_vector', args, callback) # returns 1 if error
 
     def convert_nodata_to_zero(self, i, output, callback=None):
         """Converts nodata values in a raster to zero.
@@ -419,6 +442,26 @@ class WhiteboxTools(object):
         args.append("--input='{}'".format(i))
         args.append("--output='{}'".format(output))
         return self.run_tool('convert_raster_format', args, callback) # returns 1 if error
+
+    def csv_points_to_vector(self, i, output, xfield=0, yfield=1, epsg=None, callback=None):
+        """Converts a CSV text file to vector points.
+
+        Keyword arguments:
+
+        i -- Input CSV file (i.e. source of data to be imported). 
+        output -- Output vector file. 
+        xfield -- X field number (e.g. 0 for first field). 
+        yfield -- Y field number (e.g. 1 for second field). 
+        epsg -- EPSG projection (e.g. 2958). 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        args.append("--xfield={}".format(xfield))
+        args.append("--yfield={}".format(yfield))
+        if epsg is not None: args.append("--epsg='{}'".format(epsg))
+        return self.run_tool('csv_points_to_vector', args, callback) # returns 1 if error
 
     def export_table_to_csv(self, i, output, headers=True, callback=None):
         """Exports an attribute table to a CSV text file.
@@ -503,6 +546,20 @@ class WhiteboxTools(object):
         args.append("--inputs='{}'".format(inputs))
         args.append("--output='{}'".format(output))
         return self.run_tool('merge_vectors', args, callback) # returns 1 if error
+
+    def modify_no_data_value(self, i, new_value="-32768.0", callback=None):
+        """Converts nodata values in a raster to zero.
+
+        Keyword arguments:
+
+        i -- Input raster file. 
+        new_value -- New NoData value. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--new_value={}".format(new_value))
+        return self.run_tool('modify_no_data_value', args, callback) # returns 1 if error
 
     def multi_part_to_single_part(self, i, output, exclude_holes=True, callback=None):
         """Converts a vector file containing multi-part features into a vector containing only single-part features.
@@ -591,6 +648,20 @@ class WhiteboxTools(object):
         args.append("--input='{}'".format(i))
         args.append("--output='{}'".format(output))
         return self.run_tool('raster_to_vector_points', args, callback) # returns 1 if error
+
+    def raster_to_vector_polygons(self, i, output, callback=None):
+        """Converts a raster dataset to a vector of the POLYGON shapetype.
+
+        Keyword arguments:
+
+        i -- Input raster file. 
+        output -- Output vector polygons file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        return self.run_tool('raster_to_vector_polygons', args, callback) # returns 1 if error
 
     def reinitialize_attribute_table(self, i, callback=None):
         """Reinitializes a vector's attribute table deleting all fields but the feature ID (FID).
@@ -832,7 +903,7 @@ class WhiteboxTools(object):
         if zero_back: args.append("--zero_back")
         return self.run_tool('clump', args, callback) # returns 1 if error
 
-    def construct_vector_tin(self, i, output, field=None, use_z=False, callback=None):
+    def construct_vector_tin(self, i, output, field=None, use_z=False, max_triangle_edge_length=None, callback=None):
         """Creates a vector triangular irregular network (TIN) for a set of vector points.
 
         Keyword arguments:
@@ -841,6 +912,7 @@ class WhiteboxTools(object):
         field -- Input field name in attribute table. 
         use_z -- Use the 'z' dimension of the Shapefile's geometry instead of an attribute field?. 
         output -- Output vector polygon file. 
+        max_triangle_edge_length -- Optional maximum triangle edge length; triangles larger than this size will not be gridded. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
@@ -848,6 +920,7 @@ class WhiteboxTools(object):
         if field is not None: args.append("--field='{}'".format(field))
         if use_z: args.append("--use_z")
         args.append("--output='{}'".format(output))
+        if max_triangle_edge_length is not None: args.append("--max_triangle_edge_length='{}'".format(max_triangle_edge_length))
         return self.run_tool('construct_vector_tin', args, callback) # returns 1 if error
 
     def create_hexagonal_vector_grid(self, i, output, width, orientation="horizontal", callback=None):
@@ -1018,7 +1091,7 @@ class WhiteboxTools(object):
         use_z -- Use z-coordinate instead of field?. 
         output -- Output raster file. 
         weight -- IDW weight value. 
-        radius -- Search Radius. 
+        radius -- Search Radius in map units. 
         min_points -- Minimum number of points. 
         cell_size -- Optionally specified cell size of output raster. Not used when base raster is specified. 
         base -- Optionally specified input base raster file. Not used when a cell size is specified. 
@@ -1130,6 +1203,30 @@ class WhiteboxTools(object):
         if features: args.append("--features")
         return self.run_tool('minimum_convex_hull', args, callback) # returns 1 if error
 
+    def natural_neighbour_interpolation(self, i, output, field=None, use_z=False, cell_size=None, base=None, clip=True, callback=None):
+        """Creates a raster grid based on Sibson's natural neighbour method.
+
+        Keyword arguments:
+
+        i -- Input vector points file. 
+        field -- Input field name in attribute table. 
+        use_z -- Use the 'z' dimension of the Shapefile's geometry instead of an attribute field?. 
+        output -- Output raster file. 
+        cell_size -- Optionally specified cell size of output raster. Not used when base raster is specified. 
+        base -- Optionally specified input base raster file. Not used when a cell size is specified. 
+        clip -- Clip the data to the convex hull of the points?. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        if field is not None: args.append("--field='{}'".format(field))
+        if use_z: args.append("--use_z")
+        args.append("--output='{}'".format(output))
+        if cell_size is not None: args.append("--cell_size='{}'".format(cell_size))
+        if base is not None: args.append("--base='{}'".format(base))
+        if clip: args.append("--clip")
+        return self.run_tool('natural_neighbour_interpolation', args, callback) # returns 1 if error
+
     def nearest_neighbour_gridding(self, i, field, output, use_z=False, cell_size=None, base=None, max_dist=None, callback=None):
         """Creates a raster grid based on a set of vector points and assigns grid values using the nearest neighbour.
 
@@ -1206,6 +1303,38 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('polygon_short_axis', args, callback) # returns 1 if error
 
+    def radial_basis_function_interpolation(self, i, field, output, use_z=False, radius=None, min_points=None, func_type="ThinPlateSpline", poly_order="none", weight=0.1, cell_size=None, base=None, callback=None):
+        """Interpolates vector points into a raster surface using a radial basis function scheme.
+
+        Keyword arguments:
+
+        i -- Input vector points file. 
+        field -- Input field name in attribute table. 
+        use_z -- Use z-coordinate instead of field?. 
+        output -- Output raster file. 
+        radius -- Search Radius (in map units). 
+        min_points -- Minimum number of points. 
+        func_type -- Radial basis function type; options are 'ThinPlateSpline' (default), 'PolyHarmonic', 'Gaussian', 'MultiQuadric', 'InverseMultiQuadric'. 
+        poly_order -- Polynomial order; options are 'none' (default), 'constant', 'affine'. 
+        weight -- Weight parameter used in basis function. 
+        cell_size -- Optionally specified cell size of output raster. Not used when base raster is specified. 
+        base -- Optionally specified input base raster file. Not used when a cell size is specified. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--field='{}'".format(field))
+        if use_z: args.append("--use_z")
+        args.append("--output='{}'".format(output))
+        if radius is not None: args.append("--radius='{}'".format(radius))
+        if min_points is not None: args.append("--min_points='{}'".format(min_points))
+        args.append("--func_type={}".format(func_type))
+        args.append("--poly_order={}".format(poly_order))
+        args.append("--weight={}".format(weight))
+        if cell_size is not None: args.append("--cell_size='{}'".format(cell_size))
+        if base is not None: args.append("--base='{}'".format(base))
+        return self.run_tool('radial_basis_function_interpolation', args, callback) # returns 1 if error
+
     def raster_area(self, i, output=None, out_text=False, units="grid cells", zero_back=False, callback=None):
         """Calculates the area of polygons or classes within a raster image.
 
@@ -1241,6 +1370,26 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         args.append("--assign={}".format(assign))
         return self.run_tool('raster_cell_assignment', args, callback) # returns 1 if error
+
+    def raster_perimeter(self, i, output=None, out_text=False, units="grid cells", zero_back=False, callback=None):
+        """Calculates the perimeters of polygons or classes within a raster image.
+
+        Keyword arguments:
+
+        i -- Input raster file. 
+        output -- Output raster file. 
+        out_text -- Would you like to output polygon areas to text?. 
+        units -- Area units; options include 'grid cells' and 'map units'. 
+        zero_back -- Flag indicating whether zero values should be treated as a background. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        if output is not None: args.append("--output='{}'".format(output))
+        if out_text: args.append("--out_text")
+        args.append("--units={}".format(units))
+        if zero_back: args.append("--zero_back")
+        return self.run_tool('raster_perimeter', args, callback) # returns 1 if error
 
     def reclass(self, i, output, reclass_vals, assign_mode=False, callback=None):
         """Reclassifies the values in a raster image.
@@ -1312,7 +1461,7 @@ class WhiteboxTools(object):
         args.append("--filter={}".format(filter))
         return self.run_tool('smooth_vectors', args, callback) # returns 1 if error
 
-    def tin_gridding(self, i, output, resolution, field=None, use_z=False, callback=None):
+    def tin_gridding(self, i, output, field=None, use_z=False, resolution=None, base=None, max_triangle_edge_length=None, callback=None):
         """Creates a raster grid based on a triangular irregular network (TIN) fitted to vector points.
 
         Keyword arguments:
@@ -1322,6 +1471,8 @@ class WhiteboxTools(object):
         use_z -- Use the 'z' dimension of the Shapefile's geometry instead of an attribute field?. 
         output -- Output raster file. 
         resolution -- Output raster's grid resolution. 
+        base -- Optionally specified input base raster file. Not used when a cell size is specified. 
+        max_triangle_edge_length -- Optional maximum triangle edge length; triangles larger than this size will not be gridded. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
@@ -1329,7 +1480,9 @@ class WhiteboxTools(object):
         if field is not None: args.append("--field='{}'".format(field))
         if use_z: args.append("--use_z")
         args.append("--output='{}'".format(output))
-        args.append("--resolution='{}'".format(resolution))
+        if resolution is not None: args.append("--resolution='{}'".format(resolution))
+        if base is not None: args.append("--base='{}'".format(base))
+        if max_triangle_edge_length is not None: args.append("--max_triangle_edge_length='{}'".format(max_triangle_edge_length))
         return self.run_tool('tin_gridding', args, callback) # returns 1 if error
 
     def vector_hex_binning(self, i, output, width, orientation="horizontal", callback=None):
@@ -2210,34 +2363,6 @@ class WhiteboxTools(object):
         args.append("--out_type={}".format(out_type))
         return self.run_tool('downslope_index', args, callback) # returns 1 if error
 
-    def drainage_preserving_smoothing(self, dem, output, filter=11, norm_diff=15.0, num_iter=3, max_diff=0.5, reduction=80.0, dfm=0.15, zfactor=1.0, callback=None):
-        """Reduces short-scale variation in an input DEM while preserving breaks-in-slope and small drainage features using a modified Sun et al. (2007) algorithm.
-
-        Keyword arguments:
-
-        dem -- Input raster DEM file. 
-        output -- Output raster file. 
-        filter -- Size of the filter kernel. 
-        norm_diff -- Maximum difference in normal vectors, in degrees. 
-        num_iter -- Number of iterations. 
-        max_diff -- Maximum allowable absolute elevation change (optional). 
-        reduction -- Maximum Amount to reduce the threshold angle by (0 = full smoothing; 100 = no smoothing). 
-        dfm -- Difference from median threshold (in z-units), determines when a location is low-lying. 
-        zfactor -- Optional multiplier for when the vertical and horizontal units are not the same. 
-        callback -- Custom function for handling tool text outputs.
-        """
-        args = []
-        args.append("--dem='{}'".format(dem))
-        args.append("--output='{}'".format(output))
-        args.append("--filter={}".format(filter))
-        args.append("--norm_diff={}".format(norm_diff))
-        args.append("--num_iter={}".format(num_iter))
-        args.append("--max_diff={}".format(max_diff))
-        args.append("--reduction={}".format(reduction))
-        args.append("--dfm={}".format(dfm))
-        args.append("--zfactor={}".format(zfactor))
-        return self.run_tool('drainage_preserving_smoothing', args, callback) # returns 1 if error
-
     def edge_density(self, dem, output, filter=11, norm_diff=5.0, zfactor=1.0, callback=None):
         """Calculates the density of edges, or breaks-in-slope within DEMs.
 
@@ -2322,7 +2447,7 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('elev_relative_to_watershed_min_max', args, callback) # returns 1 if error
 
-    def feature_preserving_denoise(self, dem, output, filter=11, norm_diff=15.0, num_iter=3, max_diff=0.5, zfactor=1.0, callback=None):
+    def feature_preserving_smoothing(self, dem, output, filter=11, norm_diff=15.0, num_iter=3, max_diff=0.5, zfactor=1.0, callback=None):
         """Reduces short-scale variation in an input DEM using a modified Sun et al. (2007) algorithm.
 
         Keyword arguments:
@@ -2344,7 +2469,7 @@ class WhiteboxTools(object):
         args.append("--num_iter={}".format(num_iter))
         args.append("--max_diff={}".format(max_diff))
         args.append("--zfactor={}".format(zfactor))
-        return self.run_tool('feature_preserving_denoise', args, callback) # returns 1 if error
+        return self.run_tool('feature_preserving_smoothing', args, callback) # returns 1 if error
 
     def fetch_analysis(self, dem, output, azimuth=0.0, hgt_inc=0.05, callback=None):
         """Performs an analysis of fetch or upwind distance to an obstacle.
@@ -2606,6 +2731,32 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('min_downslope_elev_change', args, callback) # returns 1 if error
 
+    def multiscale_elevation_percentile(self, dem, out_mag, out_scale, sig_digits=3, min_scale=4, step=1, num_steps=10, step_nonlinearity=1.0, callback=None):
+        """Calculates surface roughness over a range of spatial scales.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        out_mag -- Output raster roughness magnitude file. 
+        out_scale -- Output raster roughness scale file. 
+        sig_digits -- Number of significant digits. 
+        min_scale -- Minimum search neighbourhood radius in grid cells. 
+        step -- Step size as any positive non-zero integer. 
+        num_steps -- Number of steps. 
+        step_nonlinearity -- Step nonlinearity factor (1.0-2.0 is typical). 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--out_mag='{}'".format(out_mag))
+        args.append("--out_scale='{}'".format(out_scale))
+        args.append("--sig_digits={}".format(sig_digits))
+        args.append("--min_scale={}".format(min_scale))
+        args.append("--step={}".format(step))
+        args.append("--num_steps={}".format(num_steps))
+        args.append("--step_nonlinearity={}".format(step_nonlinearity))
+        return self.run_tool('multiscale_elevation_percentile', args, callback) # returns 1 if error
+
     def multiscale_roughness(self, dem, out_mag, out_scale, max_scale, min_scale=1, step=1, callback=None):
         """Calculates surface roughness over a range of spatial scales.
 
@@ -2649,6 +2800,54 @@ class WhiteboxTools(object):
         args.append("--max_scale='{}'".format(max_scale))
         args.append("--step={}".format(step))
         return self.run_tool('multiscale_roughness_signature', args, callback) # returns 1 if error
+
+    def multiscale_std_dev_normals(self, dem, out_mag, out_scale, min_scale=1, step=1, num_steps=10, step_nonlinearity=1.0, callback=None):
+        """Calculates surface roughness over a range of spatial scales.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        out_mag -- Output raster roughness magnitude file. 
+        out_scale -- Output raster roughness scale file. 
+        min_scale -- Minimum search neighbourhood radius in grid cells. 
+        step -- Step size as any positive non-zero integer. 
+        num_steps -- Number of steps. 
+        step_nonlinearity -- Step nonlinearity factor (1.0-2.0 is typical). 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--out_mag='{}'".format(out_mag))
+        args.append("--out_scale='{}'".format(out_scale))
+        args.append("--min_scale={}".format(min_scale))
+        args.append("--step={}".format(step))
+        args.append("--num_steps={}".format(num_steps))
+        args.append("--step_nonlinearity={}".format(step_nonlinearity))
+        return self.run_tool('multiscale_std_dev_normals', args, callback) # returns 1 if error
+
+    def multiscale_std_dev_normals_signature(self, dem, points, output, min_scale=1, step=1, num_steps=10, step_nonlinearity=1.0, callback=None):
+        """Calculates the surface roughness for points over a range of spatial scales.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        points -- Input vector points file. 
+        output -- Output HTML file. 
+        min_scale -- Minimum search neighbourhood radius in grid cells. 
+        step -- Step size as any positive non-zero integer. 
+        num_steps -- Number of steps. 
+        step_nonlinearity -- Step nonlinearity factor (1.0-2.0 is typical). 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--points='{}'".format(points))
+        args.append("--output='{}'".format(output))
+        args.append("--min_scale={}".format(min_scale))
+        args.append("--step={}".format(step))
+        args.append("--num_steps={}".format(num_steps))
+        args.append("--step_nonlinearity={}".format(step_nonlinearity))
+        return self.run_tool('multiscale_std_dev_normals_signature', args, callback) # returns 1 if error
 
     def multiscale_topographic_position_image(self, local, meso, broad, output, lightness=1.2, callback=None):
         """Creates a multiscale topographic position image from three DEVmax rasters of differing spatial scale ranges.
@@ -2804,24 +3003,6 @@ class WhiteboxTools(object):
         args.append("--zfactor={}".format(zfactor))
         return self.run_tool('relative_aspect', args, callback) # returns 1 if error
 
-    def relative_stream_power_index(self, sca, slope, output, exponent=1.0, callback=None):
-        """Calculates the relative stream power index.
-
-        Keyword arguments:
-
-        sca -- Input raster specific contributing area (SCA) file. 
-        slope -- Input raster slope file. 
-        output -- Output raster file. 
-        exponent -- SCA exponent value. 
-        callback -- Custom function for handling tool text outputs.
-        """
-        args = []
-        args.append("--sca='{}'".format(sca))
-        args.append("--slope='{}'".format(slope))
-        args.append("--output='{}'".format(output))
-        args.append("--exponent={}".format(exponent))
-        return self.run_tool('relative_stream_power_index', args, callback) # returns 1 if error
-
     def relative_topographic_position(self, dem, output, filterx=11, filtery=11, callback=None):
         """Calculates the relative topographic position index from a DEM.
 
@@ -2961,6 +3142,24 @@ class WhiteboxTools(object):
         args.append("--filterx={}".format(filterx))
         args.append("--filtery={}".format(filtery))
         return self.run_tool('standard_deviation_of_slope', args, callback) # returns 1 if error
+
+    def stream_power_index(self, sca, slope, output, exponent=1.0, callback=None):
+        """Calculates the relative stream power index.
+
+        Keyword arguments:
+
+        sca -- Input raster specific contributing area (SCA) file. 
+        slope -- Input raster slope file. 
+        output -- Output raster file. 
+        exponent -- SCA exponent value. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--sca='{}'".format(sca))
+        args.append("--slope='{}'".format(slope))
+        args.append("--output='{}'".format(output))
+        args.append("--exponent={}".format(exponent))
+        return self.run_tool('stream_power_index', args, callback) # returns 1 if error
 
     def surface_area_ratio(self, dem, output, callback=None):
         """Calculates a the surface area ratio of each grid cell in an input DEM.
@@ -3130,6 +3329,30 @@ class WhiteboxTools(object):
         if fill_pits: args.append("--fill_pits")
         return self.run_tool('breach_depressions', args, callback) # returns 1 if error
 
+    def breach_depressions_least_cost(self, dem, output, dist, max_cost=None, min_dist=True, flat_increment=None, fill=True, callback=None):
+        """Breaches the depressions in a DEM using a least-cost pathway method.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        output -- Output raster file. 
+        dist -- . 
+        max_cost -- Optional maximum breach cost (default is Inf). 
+        min_dist -- Optional flag indicating whether to minimize breach distances. 
+        flat_increment -- Optional elevation increment applied to flat areas. 
+        fill -- Optional flag indicating whether to fill any remaining unbreached depressions. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--output='{}'".format(output))
+        args.append("--dist='{}'".format(dist))
+        if max_cost is not None: args.append("--max_cost='{}'".format(max_cost))
+        if min_dist: args.append("--min_dist")
+        if flat_increment is not None: args.append("--flat_increment='{}'".format(flat_increment))
+        if fill: args.append("--fill")
+        return self.run_tool('breach_depressions_least_cost', args, callback) # returns 1 if error
+
     def breach_single_cell_pits(self, dem, output, callback=None):
         """Removes single-cell pits from an input DEM by breaching.
 
@@ -3144,24 +3367,48 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('breach_single_cell_pits', args, callback) # returns 1 if error
 
-    def d8_flow_accumulation(self, dem, output, out_type="cells", log=False, clip=False, callback=None):
-        """Calculates a D8 flow accumulation raster from an input DEM.
+    def burn_streams_at_roads(self, dem, streams, roads, output, width=None, callback=None):
+        """Burns-in streams at the sites of road embankments.
 
         Keyword arguments:
 
-        dem -- Input raster DEM file. 
+        dem -- Input raster digital elevation model (DEM) file. 
+        streams -- Input vector streams file. 
+        roads -- Input vector roads file. 
         output -- Output raster file. 
-        out_type -- Output type; one of 'cells' (default), 'catchment area', and 'specific contributing area'. 
-        log -- Optional flag to request the output be log-transformed. 
-        clip -- Optional flag to request clipping the display max by 1%. 
+        width -- Maximum road embankment width, in map units. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
         args.append("--dem='{}'".format(dem))
+        args.append("--streams='{}'".format(streams))
+        args.append("--roads='{}'".format(roads))
+        args.append("--output='{}'".format(output))
+        if width is not None: args.append("--width='{}'".format(width))
+        return self.run_tool('burn_streams_at_roads', args, callback) # returns 1 if error
+
+    def d8_flow_accumulation(self, i, output, out_type="cells", log=False, clip=False, pntr=False, esri_pntr=False, callback=None):
+        """Calculates a D8 flow accumulation raster from an input DEM or flow pointer.
+
+        Keyword arguments:
+
+        i -- Input raster DEM or D8 pointer file. 
+        output -- Output raster file. 
+        out_type -- Output type; one of 'cells' (default), 'catchment area', and 'specific contributing area'. 
+        log -- Optional flag to request the output be log-transformed. 
+        clip -- Optional flag to request clipping the display max by 1%. 
+        pntr -- Is the input raster a D8 flow pointer rather than a DEM?. 
+        esri_pntr -- Input  D8 pointer uses the ESRI style scheme. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
         args.append("--output='{}'".format(output))
         args.append("--out_type={}".format(out_type))
         if log: args.append("--log")
         if clip: args.append("--clip")
+        if pntr: args.append("--pntr")
+        if esri_pntr: args.append("--esri_pntr")
         return self.run_tool('d8_flow_accumulation', args, callback) # returns 1 if error
 
     def d8_mass_flux(self, dem, loading, efficiency, absorption, output, callback=None):
@@ -3200,26 +3447,28 @@ class WhiteboxTools(object):
         if esri_pntr: args.append("--esri_pntr")
         return self.run_tool('d8_pointer', args, callback) # returns 1 if error
 
-    def d_inf_flow_accumulation(self, dem, output, out_type="Specific Contributing Area", threshold=None, log=False, clip=False, callback=None):
+    def d_inf_flow_accumulation(self, i, output, out_type="Specific Contributing Area", threshold=None, log=False, clip=False, pntr=False, callback=None):
         """Calculates a D-infinity flow accumulation raster from an input DEM.
 
         Keyword arguments:
 
-        dem -- Input raster DEM file. 
+        i -- Input raster DEM or D-infinity pointer file. 
         output -- Output raster file. 
         out_type -- Output type; one of 'cells', 'sca' (default), and 'ca'. 
         threshold -- Optional convergence threshold parameter, in grid cells; default is inifinity. 
         log -- Optional flag to request the output be log-transformed. 
         clip -- Optional flag to request clipping the display max by 1%. 
+        pntr -- Is the input raster a D8 flow pointer rather than a DEM?. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
-        args.append("--dem='{}'".format(dem))
+        args.append("--input='{}'".format(i))
         args.append("--output='{}'".format(output))
         args.append("--out_type={}".format(out_type))
         if threshold is not None: args.append("--threshold='{}'".format(threshold))
         if log: args.append("--log")
         if clip: args.append("--clip")
+        if pntr: args.append("--pntr")
         return self.run_tool('d_inf_flow_accumulation', args, callback) # returns 1 if error
 
     def d_inf_mass_flux(self, dem, loading, efficiency, absorption, output, callback=None):
@@ -3394,7 +3643,7 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('fill_burn', args, callback) # returns 1 if error
 
-    def fill_depressions(self, dem, output, fix_flats=True, callback=None):
+    def fill_depressions(self, dem, output, fix_flats=True, flat_increment=None, max_depth=None, callback=None):
         """Fills all of the depressions in a DEM. Depression breaching should be preferred in most cases.
 
         Keyword arguments:
@@ -3402,13 +3651,53 @@ class WhiteboxTools(object):
         dem -- Input raster DEM file. 
         output -- Output raster file. 
         fix_flats -- Optional flag indicating whether flat areas should have a small gradient applied. 
+        flat_increment -- Optional elevation increment applied to flat areas. 
+        max_depth -- Optional maximum depression depth to fill. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
         args.append("--dem='{}'".format(dem))
         args.append("--output='{}'".format(output))
         if fix_flats: args.append("--fix_flats")
+        if flat_increment is not None: args.append("--flat_increment='{}'".format(flat_increment))
+        if max_depth is not None: args.append("--max_depth='{}'".format(max_depth))
         return self.run_tool('fill_depressions', args, callback) # returns 1 if error
+
+    def fill_depressions_planchon_and_darboux(self, dem, output, fix_flats=True, flat_increment=None, callback=None):
+        """Fills all of the depressions in a DEM using the Planchon and Darboux (2002) method.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        output -- Output raster file. 
+        fix_flats -- Optional flag indicating whether flat areas should have a small gradient applied. 
+        flat_increment -- Optional elevation increment applied to flat areas. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--output='{}'".format(output))
+        if fix_flats: args.append("--fix_flats")
+        if flat_increment is not None: args.append("--flat_increment='{}'".format(flat_increment))
+        return self.run_tool('fill_depressions_planchon_and_darboux', args, callback) # returns 1 if error
+
+    def fill_depressions_wang_and_liu(self, dem, output, fix_flats=True, flat_increment=None, callback=None):
+        """Fills all of the depressions in a DEM using the Wang and Liu (2006) method. Depression breaching should be preferred in most cases.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        output -- Output raster file. 
+        fix_flats -- Optional flag indicating whether flat areas should have a small gradient applied. 
+        flat_increment -- Optional elevation increment applied to flat areas. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--output='{}'".format(output))
+        if fix_flats: args.append("--fix_flats")
+        if flat_increment is not None: args.append("--flat_increment='{}'".format(flat_increment))
+        return self.run_tool('fill_depressions_wang_and_liu', args, callback) # returns 1 if error
 
     def fill_single_cell_pits(self, dem, output, callback=None):
         """Raises pit cells to the elevation of their lowest neighbour.
@@ -3552,7 +3841,7 @@ class WhiteboxTools(object):
         dem -- Input raster DEM file. 
         output -- Output file. 
         out_type -- Output type; one of 'depth' (default), 'volume', and 'area'. 
-        damlength -- Maximum length of thr dam. 
+        damlength -- Maximum length of the dam. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
@@ -3561,6 +3850,24 @@ class WhiteboxTools(object):
         args.append("--out_type={}".format(out_type))
         args.append("--damlength='{}'".format(damlength))
         return self.run_tool('impoundment_size_index', args, callback) # returns 1 if error
+
+    def insert_dams(self, dem, dam_pts, output, damlength, callback=None):
+        """Calculates the impoundment size resulting from damming a DEM.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        dam_pts -- Input vector dam points file. 
+        output -- Output file. 
+        damlength -- Maximum length of the dam. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--dam_pts='{}'".format(dam_pts))
+        args.append("--output='{}'".format(output))
+        args.append("--damlength='{}'".format(damlength))
+        return self.run_tool('insert_dams', args, callback) # returns 1 if error
 
     def isobasins(self, dem, output, size, callback=None):
         """Divides a landscape into nearly equal sized drainage basins (i.e. watersheds).
@@ -3626,6 +3933,30 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('max_upslope_flowpath_length', args, callback) # returns 1 if error
 
+    def md_inf_flow_accumulation(self, dem, output, out_type="specific contributing area", exponent=1.1, threshold=None, log=False, clip=False, callback=None):
+        """Calculates an FD8 flow accumulation raster from an input DEM.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        output -- Output raster file. 
+        out_type -- Output type; one of 'cells', 'specific contributing area' (default), and 'catchment area'. 
+        exponent -- Optional exponent parameter; default is 1.1. 
+        threshold -- Optional convergence threshold parameter, in grid cells; default is inifinity. 
+        log -- Optional flag to request the output be log-transformed. 
+        clip -- Optional flag to request clipping the display max by 1%. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--output='{}'".format(output))
+        args.append("--out_type={}".format(out_type))
+        args.append("--exponent={}".format(exponent))
+        if threshold is not None: args.append("--threshold='{}'".format(threshold))
+        if log: args.append("--log")
+        if clip: args.append("--clip")
+        return self.run_tool('md_inf_flow_accumulation', args, callback) # returns 1 if error
+
     def num_inflowing_neighbours(self, dem, output, callback=None):
         """Computes the number of inflowing neighbours to each cell in an input DEM based on the D8 algorithm.
 
@@ -3676,18 +4007,18 @@ class WhiteboxTools(object):
         if esri_pntr: args.append("--esri_pntr")
         return self.run_tool('rho8_pointer', args, callback) # returns 1 if error
 
-    def sink(self, dem, output, zero_background=False, callback=None):
+    def sink(self, i, output, zero_background=False, callback=None):
         """Identifies the depressions in a DEM, giving each feature a unique identifier.
 
         Keyword arguments:
 
-        dem -- Input raster DEM file. 
+        i -- Input raster DEM file. 
         output -- Output raster file. 
         zero_background -- Flag indicating whether a background value of zero should be used. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
-        args.append("--dem='{}'".format(dem))
+        args.append("--input='{}'".format(i))
         args.append("--output='{}'".format(output))
         if zero_background: args.append("--zero_background")
         return self.run_tool('sink', args, callback) # returns 1 if error
@@ -3804,13 +4135,27 @@ class WhiteboxTools(object):
         if esri_pntr: args.append("--esri_pntr")
         return self.run_tool('unnest_basins', args, callback) # returns 1 if error
 
+    def upslope_depression_storage(self, dem, output, callback=None):
+        """Estimates the average upslope depression storage depth.
+
+        Keyword arguments:
+
+        dem -- Input raster DEM file. 
+        output -- Output raster file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--dem='{}'".format(dem))
+        args.append("--output='{}'".format(output))
+        return self.run_tool('upslope_depression_storage', args, callback) # returns 1 if error
+
     def watershed(self, d8_pntr, pour_pts, output, esri_pntr=False, callback=None):
         """Identifies the watershed, or drainage basin, draining to a set of target cells.
 
         Keyword arguments:
 
         d8_pntr -- Input D8 pointer raster file. 
-        pour_pts -- Input vector pour points (outlet) file. 
+        pour_pts -- Input pour points (outlet) file. 
         output -- Output raster file. 
         esri_pntr -- D8 pointer uses the ESRI style scheme. 
         callback -- Custom function for handling tool text outputs.
@@ -4490,7 +4835,7 @@ class WhiteboxTools(object):
         args.append("--sigma={}".format(sigma))
         return self.run_tool('laplacian_of_gaussian_filter', args, callback) # returns 1 if error
 
-    def lee_filter(self, i, output, filterx=11, filtery=11, sigma=10.0, m=5.0, callback=None):
+    def lee_sigma_filter(self, i, output, filterx=11, filtery=11, sigma=10.0, m=5.0, callback=None):
         """Performs a Lee (Sigma) smoothing filter on an image.
 
         Keyword arguments:
@@ -4510,7 +4855,7 @@ class WhiteboxTools(object):
         args.append("--filtery={}".format(filtery))
         args.append("--sigma={}".format(sigma))
         args.append("-m={}".format(m))
-        return self.run_tool('lee_filter', args, callback) # returns 1 if error
+        return self.run_tool('lee_sigma_filter', args, callback) # returns 1 if error
 
     def line_detection_filter(self, i, output, variant="vertical", absvals=False, clip=0.0, callback=None):
         """Performs a line-detection filter on an image.
@@ -5068,6 +5413,22 @@ class WhiteboxTools(object):
     # LiDAR Tools #
     ###############
 
+    def classify_buildings_in_lidar(self, i, buildings, output, callback=None):
+        """Reclassifies a LiDAR points that lie within vector building footprints.
+
+        Keyword arguments:
+
+        i -- Input LiDAR file. 
+        buildings -- Input vector polygons file. 
+        output -- Output LiDAR file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--buildings='{}'".format(buildings))
+        args.append("--output='{}'".format(output))
+        return self.run_tool('classify_buildings_in_lidar', args, callback) # returns 1 if error
+
     def classify_overlap_points(self, i, output, resolution=2.0, filter=False, callback=None):
         """Classifies or filters LAS points in regions of overlapping flight lines.
 
@@ -5118,6 +5479,22 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('erase_polygon_from_lidar', args, callback) # returns 1 if error
 
+    def filter_lidar_classes(self, i, output, exclude_cls=None, callback=None):
+        """Removes points in a LAS file with certain specified class values.
+
+        Keyword arguments:
+
+        i -- Input LiDAR file. 
+        output -- Output LiDAR file. 
+        exclude_cls -- Optional exclude classes from interpolation; Valid class values range from 0 to 18, based on LAS specifications. Example, --exclude_cls='3,4,5,6,7,18'. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        if exclude_cls is not None: args.append("--exclude_cls='{}'".format(exclude_cls))
+        return self.run_tool('filter_lidar_classes', args, callback) # returns 1 if error
+
     def filter_lidar_scan_angles(self, i, output, threshold, callback=None):
         """Removes points in a LAS file with scan angles greater than a threshold.
 
@@ -5163,6 +5540,20 @@ class WhiteboxTools(object):
         if output is not None: args.append("--output='{}'".format(output))
         args.append("--resolution={}".format(resolution))
         return self.run_tool('flightline_overlap', args, callback) # returns 1 if error
+
+    def height_above_ground(self, i=None, output=None, callback=None):
+        """Normalizes a LiDAR point cloud, providing the height above the nearest ground-classified point.
+
+        Keyword arguments:
+
+        i -- Input LiDAR file (including extension). 
+        output -- Output raster file (including extension). 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        if i is not None: args.append("--input='{}'".format(i))
+        if output is not None: args.append("--output='{}'".format(output))
+        return self.run_tool('height_above_ground', args, callback) # returns 1 if error
 
     def las_to_ascii(self, inputs, callback=None):
         """Converts one or more LAS files into ASCII text files.
@@ -5314,7 +5705,7 @@ class WhiteboxTools(object):
         args.append("--outclassval={}".format(outclassval))
         return self.run_tool('lidar_elevation_slice', args, callback) # returns 1 if error
 
-    def lidar_ground_point_filter(self, i, output, radius=2.0, min_neighbours=0, slope_threshold=45.0, height_threshold=1.0, classify=True, slope_norm=True, callback=None):
+    def lidar_ground_point_filter(self, i, output, radius=2.0, min_neighbours=0, slope_threshold=45.0, height_threshold=1.0, classify=True, slope_norm=True, height_above_ground=False, callback=None):
         """Identifies ground points within LiDAR dataset using a slope-based method.
 
         Keyword arguments:
@@ -5327,6 +5718,7 @@ class WhiteboxTools(object):
         height_threshold -- Inter-point height difference to be considered an off-terrain point. 
         classify -- Classify points as ground (2) or off-ground (1). 
         slope_norm -- Perform initial ground slope normalization?. 
+        height_above_ground -- Transform output to height above average ground elevation?. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
@@ -5338,6 +5730,7 @@ class WhiteboxTools(object):
         args.append("--height_threshold={}".format(height_threshold))
         if classify: args.append("--classify")
         if slope_norm: args.append("--slope_norm")
+        if height_above_ground: args.append("--height_above_ground")
         return self.run_tool('lidar_ground_point_filter', args, callback) # returns 1 if error
 
     def lidar_hex_binning(self, i, output, width, orientation="horizontal", callback=None):
@@ -5403,7 +5796,7 @@ class WhiteboxTools(object):
 
         i -- Input LiDAR file (including extension). 
         output -- Output raster file (including extension). 
-        parameter -- Interpolation parameter; options are 'elevation' (default), 'intensity', 'class', 'scan angle', 'user data'. 
+        parameter -- Interpolation parameter; options are 'elevation' (default), 'intensity', 'class', 'return_number', 'number_of_returns', 'scan angle', 'rgb', 'user data'. 
         returns -- Point return types to include; options are 'all' (default), 'last', 'first'. 
         resolution -- Output raster's grid resolution. 
         weight -- IDW weight value. 
@@ -5426,7 +5819,7 @@ class WhiteboxTools(object):
         if maxz is not None: args.append("--maxz='{}'".format(maxz))
         return self.run_tool('lidar_idw_interpolation', args, callback) # returns 1 if error
 
-    def lidar_info(self, i, output=None, vlr=False, geokeys=False, callback=None):
+    def lidar_info(self, i, output=None, vlr=True, geokeys=True, callback=None):
         """Prints information about a LiDAR (LAS) dataset, including header, point return frequency, and classification data and information about the variable length records (VLRs) and geokeys.
 
         Keyword arguments:
@@ -5485,7 +5878,7 @@ class WhiteboxTools(object):
 
         i -- Input LiDAR file (including extension). 
         output -- Output raster file (including extension). 
-        parameter -- Interpolation parameter; options are 'elevation' (default), 'intensity', 'class', 'scan angle', 'user data'. 
+        parameter -- Interpolation parameter; options are 'elevation' (default), 'intensity', 'class', 'return_number', 'number_of_returns', 'scan angle', 'rgb', 'user data'. 
         returns -- Point return types to include; options are 'all' (default), 'last', 'first'. 
         resolution -- Output raster's grid resolution. 
         radius -- Search Radius. 
@@ -5515,7 +5908,7 @@ class WhiteboxTools(object):
         output -- Output raster file (including extension). 
         returns -- Point return types to include; options are 'all' (default), 'last', 'first'. 
         resolution -- Output raster's grid resolution. 
-        radius -- Search Radius. 
+        radius -- Search radius. 
         exclude_cls -- Optional exclude classes from interpolation; Valid class values range from 0 to 18, based on LAS specifications. Example, --exclude_cls='3,4,5,6,7,18'. 
         minz -- Optional minimum elevation for inclusion in interpolation. 
         maxz -- Optional maximum elevation for inclusion in interpolation. 
@@ -5532,15 +5925,16 @@ class WhiteboxTools(object):
         if maxz is not None: args.append("--maxz='{}'".format(maxz))
         return self.run_tool('lidar_point_density', args, callback) # returns 1 if error
 
-    def lidar_point_stats(self, i=None, resolution=1.0, num_points=True, num_pulses=False, z_range=False, intensity_range=False, predom_class=False, callback=None):
+    def lidar_point_stats(self, i=None, resolution=1.0, num_points=True, num_pulses=False, avg_points_per_pulse=True, z_range=False, intensity_range=False, predom_class=False, callback=None):
         """Creates several rasters summarizing the distribution of LAS point data. When the input/output parameters are not specified, the tool works on all LAS files contained within the working directory.
 
         Keyword arguments:
 
         i -- Input LiDAR file. 
         resolution -- Output raster's grid resolution. 
-        num_points -- Flag indicating whether or not to output the number of points raster. 
+        num_points -- Flag indicating whether or not to output the number of points (returns) raster. 
         num_pulses -- Flag indicating whether or not to output the number of pulses raster. 
+        avg_points_per_pulse -- Flag indicating whether or not to output the average number of points (returns) per pulse raster. 
         z_range -- Flag indicating whether or not to output the elevation range raster. 
         intensity_range -- Flag indicating whether or not to output the intensity range raster. 
         predom_class -- Flag indicating whether or not to output the predominant classification raster. 
@@ -5551,10 +5945,73 @@ class WhiteboxTools(object):
         args.append("--resolution={}".format(resolution))
         if num_points: args.append("--num_points")
         if num_pulses: args.append("--num_pulses")
+        if avg_points_per_pulse: args.append("--avg_points_per_pulse")
         if z_range: args.append("--z_range")
         if intensity_range: args.append("--intensity_range")
         if predom_class: args.append("--predom_class")
         return self.run_tool('lidar_point_stats', args, callback) # returns 1 if error
+
+    def lidar_ransac_planes(self, i, output, radius=2.0, num_iter=50, num_samples=5, threshold=0.35, model_size=8, max_slope=80.0, classify=False, callback=None):
+        """Performs a RANSAC analysis to identify points within a LiDAR point cloud that belong to linear planes.
+
+        Keyword arguments:
+
+        i -- Input LiDAR file. 
+        output -- Output LiDAR file. 
+        radius -- Search Radius. 
+        num_iter -- Number of iterations. 
+        num_samples -- Number of sample points on which to build the model. 
+        threshold -- Threshold used to determine inlier points. 
+        model_size -- Acceptable model size. 
+        max_slope -- Maximum planar slope. 
+        classify -- Classify points as ground (2) or off-ground (1). 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        args.append("--radius={}".format(radius))
+        args.append("--num_iter={}".format(num_iter))
+        args.append("--num_samples={}".format(num_samples))
+        args.append("--threshold={}".format(threshold))
+        args.append("--model_size={}".format(model_size))
+        args.append("--max_slope={}".format(max_slope))
+        if classify: args.append("--classify")
+        return self.run_tool('lidar_ransac_planes', args, callback) # returns 1 if error
+
+    def lidar_rbf_interpolation(self, i=None, output=None, parameter="elevation", returns="all", resolution=1.0, num_points=20, exclude_cls=None, minz=None, maxz=None, func_type="ThinPlateSpline", poly_order="none", weight=5, callback=None):
+        """Interpolates LAS files using a radial basis function (RBF) scheme. When the input/output parameters are not specified, the tool interpolates all LAS files contained within the working directory.
+
+        Keyword arguments:
+
+        i -- Input LiDAR file (including extension). 
+        output -- Output raster file (including extension). 
+        parameter -- Interpolation parameter; options are 'elevation' (default), 'intensity', 'class', 'return_number', 'number_of_returns', 'scan angle', 'rgb', 'user data'. 
+        returns -- Point return types to include; options are 'all' (default), 'last', 'first'. 
+        resolution -- Output raster's grid resolution. 
+        num_points -- Number of points. 
+        exclude_cls -- Optional exclude classes from interpolation; Valid class values range from 0 to 18, based on LAS specifications. Example, --exclude_cls='3,4,5,6,7,18'. 
+        minz -- Optional minimum elevation for inclusion in interpolation. 
+        maxz -- Optional maximum elevation for inclusion in interpolation. 
+        func_type -- Radial basis function type; options are 'ThinPlateSpline' (default), 'PolyHarmonic', 'Gaussian', 'MultiQuadric', 'InverseMultiQuadric'. 
+        poly_order -- Polynomial order; options are 'none' (default), 'constant', 'affine'. 
+        weight -- Weight parameter used in basis function. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        if i is not None: args.append("--input='{}'".format(i))
+        if output is not None: args.append("--output='{}'".format(output))
+        args.append("--parameter={}".format(parameter))
+        args.append("--returns={}".format(returns))
+        args.append("--resolution={}".format(resolution))
+        args.append("--num_points={}".format(num_points))
+        if exclude_cls is not None: args.append("--exclude_cls='{}'".format(exclude_cls))
+        if minz is not None: args.append("--minz='{}'".format(minz))
+        if maxz is not None: args.append("--maxz='{}'".format(maxz))
+        args.append("--func_type={}".format(func_type))
+        args.append("--poly_order={}".format(poly_order))
+        args.append("--weight={}".format(weight))
+        return self.run_tool('lidar_rbf_interpolation', args, callback) # returns 1 if error
 
     def lidar_remove_duplicates(self, i, output, include_z=False, callback=None):
         """Removes duplicate points from a LiDAR data set.
@@ -5572,7 +6029,7 @@ class WhiteboxTools(object):
         if include_z: args.append("--include_z")
         return self.run_tool('lidar_remove_duplicates', args, callback) # returns 1 if error
 
-    def lidar_remove_outliers(self, i, output, radius=2.0, elev_diff=50.0, callback=None):
+    def lidar_remove_outliers(self, i, output, radius=2.0, elev_diff=50.0, use_median=False, classify=True, callback=None):
         """Removes outliers (high and low points) in a LiDAR point cloud.
 
         Keyword arguments:
@@ -5581,6 +6038,8 @@ class WhiteboxTools(object):
         output -- Output LiDAR file. 
         radius -- Search Radius. 
         elev_diff -- Max. elevation difference. 
+        use_median -- Optional flag indicating whether to use the difference from median elevation rather than mean. 
+        classify -- Classify points as ground (2) or off-ground (1). 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
@@ -5588,26 +6047,42 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         args.append("--radius={}".format(radius))
         args.append("--elev_diff={}".format(elev_diff))
+        if use_median: args.append("--use_median")
+        if classify: args.append("--classify")
         return self.run_tool('lidar_remove_outliers', args, callback) # returns 1 if error
 
-    def lidar_segmentation(self, i, output, radius=5.0, norm_diff=10.0, maxzdiff=1.0, callback=None):
-        """Segments a LiDAR point cloud based on normal vectors.
+    def lidar_segmentation(self, i, output, radius=2.0, num_iter=50, num_samples=10, threshold=0.15, model_size=15, max_slope=80.0, norm_diff=10.0, maxzdiff=1.0, classes=False, ground=False, callback=None):
+        """Segments a LiDAR point cloud based on differences in the orientation of fitted planar surfaces and point proximity.
 
         Keyword arguments:
 
         i -- Input LiDAR file. 
-        output -- Output file. 
+        output -- Output LiDAR file. 
         radius -- Search Radius. 
+        num_iter -- Number of iterations. 
+        num_samples -- Number of sample points on which to build the model. 
+        threshold -- Threshold used to determine inlier points. 
+        model_size -- Acceptable model size. 
+        max_slope -- Maximum planar slope. 
         norm_diff -- Maximum difference in normal vectors, in degrees. 
         maxzdiff -- Maximum difference in elevation (z units) between neighbouring points of the same segment. 
+        classes -- Segments don't cross class boundaries. 
+        ground -- Classify the largest segment as ground points?. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
         args.append("--input='{}'".format(i))
         args.append("--output='{}'".format(output))
         args.append("--radius={}".format(radius))
+        args.append("--num_iter={}".format(num_iter))
+        args.append("--num_samples={}".format(num_samples))
+        args.append("--threshold={}".format(threshold))
+        args.append("--model_size={}".format(model_size))
+        args.append("--max_slope={}".format(max_slope))
         args.append("--norm_diff={}".format(norm_diff))
         args.append("--maxzdiff={}".format(maxzdiff))
+        if classes: args.append("--classes")
+        if ground: args.append("--ground")
         return self.run_tool('lidar_segmentation', args, callback) # returns 1 if error
 
     def lidar_segmentation_based_filter(self, i, output, radius=5.0, norm_diff=2.0, maxzdiff=1.0, classify=False, callback=None):
@@ -5717,7 +6192,7 @@ class WhiteboxTools(object):
 
         i -- Input LiDAR file (including extension). 
         output -- Output raster file (including extension). 
-        parameter -- Interpolation parameter; options are 'elevation' (default), 'intensity', 'class', 'scan angle', 'user data'. 
+        parameter -- Interpolation parameter; options are 'elevation' (default), 'intensity', 'class', 'return_number', 'number_of_returns', 'scan angle', 'rgb', 'user data'. 
         returns -- Point return types to include; options are 'all' (default), 'last', 'first'. 
         resolution -- Output raster's grid resolution. 
         exclude_cls -- Optional exclude classes from interpolation; Valid class values range from 0 to 18, based on LAS specifications. Example, --exclude_cls='3,4,5,6,7,18'. 
@@ -5926,6 +6401,48 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('arc_tan', args, callback) # returns 1 if error
 
+    def arcosh(self, i, output, callback=None):
+        """Returns the inverse hyperbolic cosine (arcosh) of each values in a raster.
+
+        Keyword arguments:
+
+        i -- Input raster file. 
+        output -- Output raster file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        return self.run_tool('arcosh', args, callback) # returns 1 if error
+
+    def arsinh(self, i, output, callback=None):
+        """Returns the inverse hyperbolic sine (arsinh) of each values in a raster.
+
+        Keyword arguments:
+
+        i -- Input raster file. 
+        output -- Output raster file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        return self.run_tool('arsinh', args, callback) # returns 1 if error
+
+    def artanh(self, i, output, callback=None):
+        """Returns the inverse hyperbolic tangent (arctanh) of each values in a raster.
+
+        Keyword arguments:
+
+        i -- Input raster file. 
+        output -- Output raster file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--output='{}'".format(output))
+        return self.run_tool('artanh', args, callback) # returns 1 if error
+
     def atan2(self, input_y, input_x, output, callback=None):
         """Returns the 2-argument inverse tangent (atan2).
 
@@ -5947,7 +6464,7 @@ class WhiteboxTools(object):
 
         Keyword arguments:
 
-        i -- Input raster file. 
+        i -- Input vector file. 
         output -- Output HTML file (default name will be based on input file if unspecified). 
         callback -- Custom function for handling tool text outputs.
         """
@@ -5955,6 +6472,28 @@ class WhiteboxTools(object):
         args.append("--input='{}'".format(i))
         if output is not None: args.append("--output='{}'".format(output))
         return self.run_tool('attribute_correlation', args, callback) # returns 1 if error
+
+    def attribute_correlation_neighbourhood_analysis(self, i, field1, field2, radius=None, min_points=None, stat="pearson", callback=None):
+        """Performs a correlation on two input vector attributes within a neighbourhood search windows.
+
+        Keyword arguments:
+
+        i -- Input vector file. 
+        field1 -- First input field name (dependent variable) in attribute table. 
+        field2 -- Second input field name (independent variable) in attribute table. 
+        radius -- Search Radius (in map units). 
+        min_points -- Minimum number of points. 
+        stat -- Correlation type; one of 'pearson' (default) and 'spearman'. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--field1='{}'".format(field1))
+        args.append("--field2='{}'".format(field2))
+        if radius is not None: args.append("--radius='{}'".format(radius))
+        if min_points is not None: args.append("--min_points='{}'".format(min_points))
+        args.append("--stat={}".format(stat))
+        return self.run_tool('attribute_correlation_neighbourhood_analysis', args, callback) # returns 1 if error
 
     def attribute_histogram(self, i, field, output, callback=None):
         """Creates a histogram for the field values of a vector's attribute table.
@@ -6152,26 +6691,6 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         return self.run_tool('exp2', args, callback) # returns 1 if error
 
-    def extract_raster_statistics(self, i, features, output=None, stat="average", out_table=None, callback=None):
-        """Extracts descriptive statistics for a group of patches in a raster.
-
-        Keyword arguments:
-
-        i -- Input data raster file. 
-        features -- Input feature definition raster file. 
-        output -- Output raster file. 
-        stat -- Statistic to extract, including 'average', 'minimum', 'maximum', 'range', 'standard deviation', and 'total'. 
-        out_table -- Output HTML Table file. 
-        callback -- Custom function for handling tool text outputs.
-        """
-        args = []
-        args.append("--input='{}'".format(i))
-        args.append("--features='{}'".format(features))
-        if output is not None: args.append("--output='{}'".format(output))
-        args.append("--stat={}".format(stat))
-        if out_table is not None: args.append("--out_table='{}'".format(out_table))
-        return self.run_tool('extract_raster_statistics', args, callback) # returns 1 if error
-
     def floor(self, i, output, callback=None):
         """Returns the largest (closest to positive infinity) value that is less than or equal to the values in a raster.
 
@@ -6234,7 +6753,29 @@ class WhiteboxTools(object):
         if output is not None: args.append("--output='{}'".format(output))
         return self.run_tool('image_correlation', args, callback) # returns 1 if error
 
-    def image_regression(self, input1, input2, output, out_residuals=None, standardize=False, callback=None):
+    def image_correlation_neighbourhood_analysis(self, input1, input2, output1, output2, filter=11, stat="pearson", callback=None):
+        """Performs image correlation on two input images neighbourhood search windows.
+
+        Keyword arguments:
+
+        input1 -- Input raster file. 
+        input2 -- Input raster file. 
+        output1 -- Output correlation (r-value or rho) raster file. 
+        output2 -- Output significance (p-value) raster file. 
+        filter -- Size of the filter kernel. 
+        stat -- Correlation type; one of 'pearson' (default) and 'spearman'. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input1='{}'".format(input1))
+        args.append("--input2='{}'".format(input2))
+        args.append("--output1='{}'".format(output1))
+        args.append("--output2='{}'".format(output2))
+        args.append("--filter={}".format(filter))
+        args.append("--stat={}".format(stat))
+        return self.run_tool('image_correlation_neighbourhood_analysis', args, callback) # returns 1 if error
+
+    def image_regression(self, input1, input2, output, out_residuals=None, standardize=False, scattergram=False, num_samples=1000, callback=None):
         """Performs image regression analysis on two input images.
 
         Keyword arguments:
@@ -6244,6 +6785,8 @@ class WhiteboxTools(object):
         output -- Output HTML file for regression summary report. 
         out_residuals -- Output raster regression resdidual file. 
         standardize -- Optional flag indicating whether to standardize the residuals map. 
+        scattergram -- Optional flag indicating whether to output a scattergram. 
+        num_samples -- Number of samples used to create scattergram. 
         callback -- Custom function for handling tool text outputs.
         """
         args = []
@@ -6252,6 +6795,8 @@ class WhiteboxTools(object):
         args.append("--output='{}'".format(output))
         if out_residuals is not None: args.append("--out_residuals='{}'".format(out_residuals))
         if standardize: args.append("--standardize")
+        if scattergram: args.append("--scattergram")
+        args.append("--num_samples={}".format(num_samples))
         return self.run_tool('image_regression', args, callback) # returns 1 if error
 
     def in_place_add(self, input1, input2, callback=None):
@@ -6555,6 +7100,24 @@ class WhiteboxTools(object):
         args.append("--input2='{}'".format(input2))
         args.append("--output='{}'".format(output))
         return self.run_tool('not_equal_to', args, callback) # returns 1 if error
+
+    def paired_sample_t_test(self, input1, input2, output, num_samples=None, callback=None):
+        """Performs a 2-sample K-S test for significant differences on two input rasters.
+
+        Keyword arguments:
+
+        input1 -- First input raster file. 
+        input2 -- Second input raster file. 
+        output -- Output HTML file. 
+        num_samples -- Number of samples. Leave blank to use whole image. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input1='{}'".format(input1))
+        args.append("--input2='{}'".format(input2))
+        args.append("--output='{}'".format(output))
+        if num_samples is not None: args.append("--num_samples='{}'".format(num_samples))
+        return self.run_tool('paired_sample_t_test', args, callback) # returns 1 if error
 
     def power(self, input1, input2, output, callback=None):
         """Raises the values in grid cells of one rasters, or a constant value, by values in another raster or constant value.
@@ -6924,6 +7487,42 @@ class WhiteboxTools(object):
         args.append("--iterations={}".format(iterations))
         return self.run_tool('turning_bands_simulation', args, callback) # returns 1 if error
 
+    def two_sample_ks_test(self, input1, input2, output, num_samples=None, callback=None):
+        """Performs a 2-sample K-S test for significant differences on two input rasters.
+
+        Keyword arguments:
+
+        input1 -- First input raster file. 
+        input2 -- Second input raster file. 
+        output -- Output HTML file. 
+        num_samples -- Number of samples. Leave blank to use whole image. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input1='{}'".format(input1))
+        args.append("--input2='{}'".format(input2))
+        args.append("--output='{}'".format(output))
+        if num_samples is not None: args.append("--num_samples='{}'".format(num_samples))
+        return self.run_tool('two_sample_ks_test', args, callback) # returns 1 if error
+
+    def wilcoxon_signed_rank_test(self, input1, input2, output, num_samples=None, callback=None):
+        """Performs a 2-sample K-S test for significant differences on two input rasters.
+
+        Keyword arguments:
+
+        input1 -- First input raster file. 
+        input2 -- Second input raster file. 
+        output -- Output HTML file. 
+        num_samples -- Number of samples. Leave blank to use whole image. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input1='{}'".format(input1))
+        args.append("--input2='{}'".format(input2))
+        args.append("--output='{}'".format(output))
+        if num_samples is not None: args.append("--num_samples='{}'".format(num_samples))
+        return self.run_tool('wilcoxon_signed_rank_test', args, callback) # returns 1 if error
+
     def xor(self, input1, input2, output, callback=None):
         """Performs a logical XOR operator on two Boolean raster images.
 
@@ -6953,6 +7552,26 @@ class WhiteboxTools(object):
         args.append("--input='{}'".format(i))
         args.append("--output='{}'".format(output))
         return self.run_tool('z_scores', args, callback) # returns 1 if error
+
+    def zonal_statistics(self, i, features, output=None, stat="mean", out_table=None, callback=None):
+        """Extracts descriptive statistics for a group of patches in a raster.
+
+        Keyword arguments:
+
+        i -- Input data raster file. 
+        features -- Input feature definition raster file. 
+        output -- Output raster file. 
+        stat -- Statistic to extract, including 'mean', 'median', 'minimum', 'maximum', 'range', 'standard deviation', and 'total'. 
+        out_table -- Output HTML Table file. 
+        callback -- Custom function for handling tool text outputs.
+        """
+        args = []
+        args.append("--input='{}'".format(i))
+        args.append("--features='{}'".format(features))
+        if output is not None: args.append("--output='{}'".format(output))
+        args.append("--stat={}".format(stat))
+        if out_table is not None: args.append("--out_table='{}'".format(out_table))
+        return self.run_tool('zonal_statistics', args, callback) # returns 1 if error
 
     ###########################
     # Stream Network Analysis #
@@ -6996,7 +7615,7 @@ class WhiteboxTools(object):
         if zero_background: args.append("--zero_background")
         return self.run_tool('extract_streams', args, callback) # returns 1 if error
 
-    def extract_valleys(self, dem, output, variant="Lower Quartile", line_thin=True, filter=5, callback=None):
+    def extract_valleys(self, dem, output, variant="LQ", line_thin=True, filter=5, callback=None):
         """Identifies potential valley bottom grid cells based on local topolography alone.
 
         Keyword arguments:
